@@ -1,4 +1,4 @@
-# Shopify Skill
+﻿# Shopify Skill
 
 Shopify Dev MCP + Admin GraphQL skill with auditable execution, safety guardrails, and reusable store analytics workflows.
 
@@ -177,7 +177,7 @@ Short changelog summary is kept here. Detailed history is in [documentation/chan
 ## 10. Release
 
 - Release template: [.github/release-template.md](./.github/release-template.md)
-- v1.0.0 notes: [RELEASE_NOTES_v1.0.0.md](./RELEASE_NOTES_v1.0.0.md)
+- v1.0.0 notes: [documentation/RELEASE_NOTES_v1.0.0.md](./documentation/RELEASE_NOTES_v1.0.0.md)
 
 ## 11. License
 

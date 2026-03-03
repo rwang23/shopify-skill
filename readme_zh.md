@@ -1,4 +1,4 @@
-# Shopify Skill 中文文档
+﻿# Shopify Skill 中文文档
 
 英文主文档请查看 [README.md](./README.md)。
 
@@ -169,7 +169,7 @@ README 保留简版，详细记录在：[documentation/changelog.md](./documenta
 ## 10. 发布
 
 - 发布模板： [.github/release-template.md](./.github/release-template.md)
-- v1.0.0 说明： [RELEASE_NOTES_v1.0.0.md](./RELEASE_NOTES_v1.0.0.md)
+- v1.0.0 说明： [documentation/RELEASE_NOTES_v1.0.0.md](./documentation/RELEASE_NOTES_v1.0.0.md)
 
 ## 11. 许可
 

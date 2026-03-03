@@ -1,4 +1,4 @@
-# Release Notes - v1.0.0 (2026-03-03)
+﻿# Release Notes - v1.0.0 (2026-03-03)
 
 ## Summary
 First stable release of `shopify-skill` with auditable operations and safe write controls.
@@ -33,8 +33,8 @@ First stable release of `shopify-skill` with auditable operations and safe write
 
 - Documentation:
   - `README.md` (bilingual)
-  - `INSTALL.md`
-  - `USAGE.md`
+  - `documentation/INSTALL.md`
+  - `documentation/USAGE.md`
   - `references/audit-output-convention.md`
 
 - Tests:
