@@ -70,7 +70,39 @@ args = ["-y", "@shopify/dev-mcp@latest"]
 - Node.js（用于 `npx` 拉起 Shopify Dev MCP）
 - Shopify Admin API Token
 
-### 5.2 项目凭据
+### 5.2 克隆到对应 Agent 的 skills 目录
+
+不要克隆到随意的项目目录。
+请把仓库克隆到你当前使用的 Agent 的 skills/extensions 目录下。
+
+Codex（Windows/macOS/Linux）示例：
+```bash
+git clone https://github.com/rwang23/shopify-skill.git ~/.codex/skills/shopify-skill
+```
+
+Claude（Code/Desktop）：
+```bash
+git clone https://github.com/rwang23/shopify-skill.git ~/.claude/skills/shopify-skill
+```
+
+Antigravity：
+```bash
+git clone https://github.com/rwang23/shopify-skill.git ~/.gemini/antigravity/skills/shopify-skill
+```
+
+OpenClaw：
+```bash
+git clone https://github.com/rwang23/shopify-skill.git ~/.openclaw/skills/shopify-skill
+```
+
+然后进入目录：
+```bash
+cd ~/.<agent>/skills/shopify-skill
+```
+
+备选方式：下载 ZIP 并解压到对应 Agent 的 skills 目录下。
+
+### 5.3 项目凭据
 
 在项目根目录创建 `.env`：
 
@@ -164,7 +196,7 @@ python -m unittest discover tests -v
 
 ## 9. 变更记录
 
-README 保留简版，详细记录在：[documentation/changelog.md](./documentation/changelog.md)
+README 保留简版，详细记录在：[documentation/CHANGELOG.md](./documentation/CHANGELOG.md)
 
 ## 10. 发布
 

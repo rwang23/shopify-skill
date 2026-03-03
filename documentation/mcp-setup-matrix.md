@@ -1,4 +1,4 @@
-# MCP Setup Matrix
+﻿# MCP Setup Matrix
 
 This document provides runtime-specific MCP configuration guidance for `shopify-dev-mcp`.
 
@@ -13,6 +13,10 @@ All runtimes should use the same server command:
 
 Config file:
 - `~/.codex/config.toml`
+Recommended skills dir:
+- `~/.codex/skills`
+Clone:
+- `git clone https://github.com/rwang23/shopify-skill.git ~/.codex/skills/shopify-skill`
 
 Example:
 
@@ -26,6 +30,10 @@ args = ["-y", "@shopify/dev-mcp@latest"]
 
 Config file:
 - `<project-root>/.mcp.json`
+Recommended skills dir:
+- `~/.claude/skills`
+Clone:
+- `git clone https://github.com/rwang23/shopify-skill.git ~/.claude/skills/shopify-skill`
 
 Example:
 
@@ -49,6 +57,10 @@ Common OS paths (may vary by build/channel):
 - macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
 - Windows: `%APPDATA%\\Claude\\claude_desktop_config.json`
 - Linux: `~/.config/Claude/claude_desktop_config.json`
+Recommended skills dir:
+- `~/.claude/skills`
+Clone:
+- `git clone https://github.com/rwang23/shopify-skill.git ~/.claude/skills/shopify-skill`
 
 Example JSON shape:
 
@@ -70,6 +82,10 @@ Use Antigravity MCP/tool settings UI to register a new MCP server with:
 - args: `-y @shopify/dev-mcp@latest`
 
 If your Antigravity build supports raw config file editing, use the same `mcpServers` JSON shape as above.
+Recommended skills dir:
+- `~/.gemini/antigravity/skills`
+Clone:
+- `git clone https://github.com/rwang23/shopify-skill.git ~/.gemini/antigravity/skills/shopify-skill`
 
 ## 5) OpenClaw
 
@@ -78,6 +94,10 @@ OpenClaw environments may differ by version and extension model.
 Recommended order:
 1. Try native MCP server registration in settings (if available) with the same command/args.
 2. If MCP registration is unavailable, run this repository in script mode (`scripts/admin_graphql_query.py`) and keep MCP features optional.
+Recommended skills dir:
+- `~/.openclaw/skills`
+Clone:
+- `git clone https://github.com/rwang23/shopify-skill.git ~/.openclaw/skills/shopify-skill`
 
 ## 6) Device contexts
 

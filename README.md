@@ -72,7 +72,39 @@ args = ["-y", "@shopify/dev-mcp@latest"]
 - Node.js (for Shopify Dev MCP via `npx`)
 - Shopify Admin API token
 
-### 5.2 Configure project credentials
+### 5.2 Clone into your agent's skills directory
+
+Do not clone this repository into an arbitrary project folder.
+Clone it into the skills/extensions directory of the runtime (agent) you are currently using.
+
+Codex:
+```bash
+git clone https://github.com/rwang23/shopify-skill.git ~/.codex/skills/shopify-skill
+```
+
+Claude:
+```bash
+git clone https://github.com/rwang23/shopify-skill.git ~/.claude/skills/shopify-skill
+```
+
+Antigravity:
+```bash
+git clone https://github.com/rwang23/shopify-skill.git ~/.gemini/antigravity/skills/shopify-skill
+```
+
+OpenClaw:
+```bash
+git clone https://github.com/rwang23/shopify-skill.git ~/.openclaw/skills/shopify-skill
+```
+
+Then open the cloned folder:
+```bash
+cd ~/.<agent>/skills/shopify-skill
+```
+
+Alternative: download ZIP from GitHub and extract it under the corresponding agent skills folder.
+
+### 5.3 Configure project credentials
 
 Create project-root `.env`:
 
@@ -166,7 +198,7 @@ python -m unittest discover tests -v
 
 ## 9. Changelog
 
-Short changelog summary is kept here. Detailed history is in [documentation/changelog.md](./documentation/changelog.md).
+Short changelog summary is kept here. Detailed history is in [documentation/CHANGELOG.md](./documentation/CHANGELOG.md).
 
 ### 1.0.0 (2026-03-03)
 
