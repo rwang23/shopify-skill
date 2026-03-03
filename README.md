@@ -2,7 +2,7 @@
 
 Shopify Dev MCP + Admin GraphQL skill with auditable execution, safety guardrails, and reusable store analytics workflows.
 
-For Chinese documentation, see [readme_zh.md](./readme_zh.md).
+For Chinese documentation, see [中文](./readme_zh.md).
 
 ## Table of Contents
 - [1. Scope and Compatibility](#1-scope-and-compatibility)
