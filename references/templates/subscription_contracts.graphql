@@ -1,0 +1,20 @@
+﻿query SubscriptionContractsPage($first: Int!, $after: String, $query: String) {
+  subscriptionContracts(first: $first, after: $after, query: $query, sortKey: UPDATED_AT, reverse: true) {
+    nodes {
+      id
+      status
+      createdAt
+      updatedAt
+      nextBillingDate
+      customer {
+        id
+        displayName
+        email
+      }
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+  }
+}

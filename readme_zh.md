@@ -143,14 +143,30 @@ python scripts/admin_graphql_query.py top-products --days 30 --limit 20 --by rev
 python scripts/admin_graphql_query.py orders-export --days 30 --page-size 100 --max-pages 10
 ```
 
-### 6.3 库存命令
+### 6.3 业务用例模板
+
+使用内置模板库 `references/templates/`：
+
+```bash
+python scripts/admin_graphql_query.py query --query-file references/templates/orders_recent.graphql --variables-file references/templates/orders_recent.variables.json
+python scripts/admin_graphql_query.py query --query-file references/templates/customers_recent.graphql --variables-file references/templates/customers_recent.variables.json
+python scripts/admin_graphql_query.py query --query-file references/templates/blogs_with_articles.graphql --variables-file references/templates/blogs_with_articles.variables.json
+python scripts/admin_graphql_query.py query --query-file references/templates/products_performance.graphql --variables-file references/templates/products_performance.variables.json
+python scripts/admin_graphql_query.py query --query-file references/templates/sales_shopifyql.graphql --variables-file references/templates/sales_shopifyql.variables.json
+python scripts/admin_graphql_query.py query --query-file references/templates/subscription_contracts.graphql --variables-file references/templates/subscription_contracts.variables.json
+python scripts/admin_graphql_query.py query --query-file references/templates/app_installation_subscriptions.graphql --variables-file references/templates/app_installation_subscriptions.variables.json
+```
+
+完整矩阵（scope + 场景说明）：[references/common-templates.md](./references/common-templates.md)
+
+### 6.4 库存命令
 
 ```bash
 python scripts/admin_graphql_query.py scan-stock --threshold 50 --exclude-product "Shipment Protection+"
 python scripts/admin_graphql_query.py inventory-alerts --low-threshold 10 --high-threshold 50
 ```
 
-### 6.4 安全写入流程
+### 6.5 安全写入流程
 
 1. 先 dry-run：
 
@@ -197,6 +213,12 @@ python -m unittest discover tests -v
 ## 9. 变更记录
 
 README 保留简版，详细记录在：[documentation/CHANGELOG.md](./documentation/CHANGELOG.md)
+
+### 1.1.0 (2026-03-03)
+
+- 新增订单、客户、博客/文章、产品、销售（ShopifyQL）、订阅的模板包。
+- 新增官方来源调查文档：`documentation/use-cases-research-2026-03-03.md`。
+- 扩展使用说明，加入可直接复制执行的模板命令。
 
 ## 10. 发布
 

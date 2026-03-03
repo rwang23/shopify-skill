@@ -1,0 +1,29 @@
+﻿query SalesByDay($query: String!) {
+  shopifyqlQuery(query: $query) {
+    __typename
+    ... on TableResponse {
+      tableData {
+        columns {
+          name
+          dataType
+          displayName
+        }
+        rows
+      }
+      parseErrors {
+        code
+        message
+        range {
+          start {
+            line
+            character
+          }
+          end {
+            line
+            character
+          }
+        }
+      }
+    }
+  }
+}

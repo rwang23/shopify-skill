@@ -1,0 +1,21 @@
+﻿query AppInstallationSubscriptions {
+  currentAppInstallation {
+    id
+    activeSubscriptions {
+      id
+      name
+      status
+      test
+      createdAt
+      currentPeriodEnd
+      lineItems {
+        id
+        plan {
+          pricingDetails {
+            __typename
+          }
+        }
+      }
+    }
+  }
+}

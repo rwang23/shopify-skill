@@ -38,6 +38,7 @@ Any write operation must explicitly pass `--apply`.
 - `top-products`
 - `inventory-alerts`
 - `orders-export`
+- For business analysis requests, prefer `query --query-file` with reusable templates in `references/templates/`.
 
 5. Persist auditable outputs.
 - Always emit `summary.json`, `request.json`, `result.json`.

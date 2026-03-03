@@ -1,0 +1,19 @@
+﻿query BlogsWithArticles($first: Int!, $articlesFirst: Int!) {
+  blogs(first: $first) {
+    nodes {
+      id
+      title
+      handle
+      updatedAt
+      articles(first: $articlesFirst, sortKey: UPDATED_AT, reverse: true) {
+        nodes {
+          id
+          title
+          handle
+          publishedAt
+          updatedAt
+        }
+      }
+    }
+  }
+}

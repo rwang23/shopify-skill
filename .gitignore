@@ -27,3 +27,9 @@ Thumbs.db
 
 # Local outputs
 shopify-skill-output/
+
+# Internal planning/research docs
+documentation/task_plan-*.md
+documentation/progress-*.md
+documentation/findings-*.md
+documentation/use-cases-research-*.md

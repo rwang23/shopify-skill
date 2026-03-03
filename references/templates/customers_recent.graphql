@@ -1,0 +1,19 @@
+﻿query CustomersRecent($first: Int!, $after: String, $query: String) {
+  customers(first: $first, after: $after, query: $query, sortKey: UPDATED_AT, reverse: true) {
+    nodes {
+      id
+      displayName
+      email
+      numberOfOrders
+      updatedAt
+      amountSpent {
+        amount
+        currencyCode
+      }
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+  }
+}

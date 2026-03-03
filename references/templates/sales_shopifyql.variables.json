@@ -1,0 +1,3 @@
+﻿{
+  "query": "FROM sales SHOW gross_sales, net_sales, orders, average_order_value BY day SINCE -30d ORDER BY day"
+}

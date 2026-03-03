@@ -1,235 +1,103 @@
-# Common Admin GraphQL templates
+﻿# Common Admin GraphQL templates
 
-All templates are derived from Shopify Admin GraphQL latest docs:
-https://shopify.dev/docs/api/admin-graphql/latest
+Primary source docs:
+- https://shopify.dev/docs/api/admin-graphql/latest
 
-## 1) Products list (query)
+## Template library
 
-Docs: https://shopify.dev/docs/api/admin-graphql/latest/queries/products
-Scope: `read_products`
+All templates below are runnable with:
 
-```graphql
-query ProductsPage($first: Int!, $after: String) {
-  products(first: $first, after: $after) {
-    nodes {
-      id
-      title
-      handle
-      status
-      updatedAt
-    }
-    pageInfo {
-      hasNextPage
-      endCursor
-    }
-  }
-}
+```bash
+python scripts/admin_graphql_query.py query --query-file <template.graphql> --variables-file <template.variables.json>
 ```
 
-## 2) Product update (mutation)
+## Scenario matrix
 
-Docs: https://shopify.dev/docs/api/admin-graphql/latest/mutations/productUpdate
-Scope: `write_products`
+| Scenario | Template | Typical scope(s) | Notes |
+|---|---|---|---|
+| Orders feed and status monitoring | `references/templates/orders_recent.graphql` | `read_orders` | Includes customer identity fields, requires protected customer data level. |
+| Customer activity segmentation | `references/templates/customers_recent.graphql` | `read_customers` | Includes email and spend fields, requires protected customer data level. |
+| Blog and article editorial operations | `references/templates/blogs_with_articles.graphql` | `read_content` | Supports blog/article publishing workflow checks. |
+| Product catalog and inventory visibility | `references/templates/products_performance.graphql` | `read_products` | Good for SKU-level merchandising snapshots. |
+| Sales trend analytics (ShopifyQL) | `references/templates/sales_shopifyql.graphql` | `read_reports` | Requires ShopifyQL support and reports access. |
+| Subscription commerce lifecycle | `references/templates/subscription_contracts.graphql` | `read_own_subscription_contracts` or related subscription scopes | For subscription contracts and next billing ops. |
+| App billing subscription status | `references/templates/app_installation_subscriptions.graphql` | app billing scopes (`read_billing`/app context) | For app subscription health and billing visibility. |
 
-```graphql
-mutation ProductUpdate($product: ProductUpdateInput!) {
-  productUpdate(product: $product) {
-    product {
-      id
-      title
-      handle
-      updatedAt
-    }
-    userErrors {
-      field
-      message
-    }
-  }
-}
-```
-
-Variables:
-
-```json
-{
-  "product": {
-    "id": "gid://shopify/Product/1234567890",
-    "title": "Updated title"
-  }
-}
-```
-
-## 3) Product variants bulk update (mutation)
-
-Docs: https://shopify.dev/docs/api/admin-graphql/latest/mutations/productVariantsBulkUpdate
-Scope: `write_products`
-
-```graphql
-mutation ProductVariantsBulkUpdate($productId: ID!, $variants: [ProductVariantsBulkInput!]!) {
-  productVariantsBulkUpdate(productId: $productId, variants: $variants) {
-    product {
-      id
-    }
-    productVariants {
-      id
-      title
-      price
-      compareAtPrice
-    }
-    userErrors {
-      field
-      message
-    }
-  }
-}
-```
-
-## 4) Collection create (mutation)
-
-Docs: https://shopify.dev/docs/api/admin-graphql/latest/mutations/collectionCreate
-Scope: `write_products`
-
-```graphql
-mutation CollectionCreate($input: CollectionInput!) {
-  collectionCreate(input: $input) {
-    collection {
-      id
-      title
-      handle
-      updatedAt
-    }
-    userErrors {
-      field
-      message
-    }
-  }
-}
-```
-
-## 5) Metafields set (mutation)
-
-Docs: https://shopify.dev/docs/api/admin-graphql/latest/mutations/metafieldsSet
-Scope: depends on owner type (for product usually `write_products`)
-
-```graphql
-mutation MetafieldsSet($metafields: [MetafieldsSetInput!]!) {
-  metafieldsSet(metafields: $metafields) {
-    metafields {
-      id
-      key
-      namespace
-      value
-      updatedAt
-    }
-    userErrors {
-      field
-      message
-      code
-    }
-  }
-}
-```
-
-Variables example:
-
-```json
-{
-  "metafields": [
-    {
-      "ownerId": "gid://shopify/Product/1234567890",
-      "namespace": "custom",
-      "key": "subtitle",
-      "type": "single_line_text_field",
-      "value": "Eco-friendly"
-    }
-  ]
-}
-```
-
-## 6) Orders list (query)
+## 1) Orders
 
 Docs: https://shopify.dev/docs/api/admin-graphql/latest/queries/orders
-Scope: `read_orders`
 
-```graphql
-query OrdersPage($first: Int!, $after: String, $query: String) {
-  orders(first: $first, after: $after, query: $query, sortKey: UPDATED_AT, reverse: true) {
-    nodes {
-      id
-      name
-      createdAt
-      updatedAt
-      displayFinancialStatus
-      totalPriceSet {
-        shopMoney {
-          amount
-          currencyCode
-        }
-      }
-    }
-    pageInfo {
-      hasNextPage
-      endCursor
-    }
-  }
-}
+```bash
+python scripts/admin_graphql_query.py query \
+  --query-file references/templates/orders_recent.graphql \
+  --variables-file references/templates/orders_recent.variables.json
 ```
 
-## 7) Customers list (query)
+## 2) Customers
 
 Docs: https://shopify.dev/docs/api/admin-graphql/latest/queries/customers
-Scope: `read_customers`
 
-```graphql
-query CustomersPage($first: Int!, $after: String, $query: String) {
-  customers(first: $first, after: $after, query: $query, sortKey: UPDATED_AT, reverse: true) {
-    nodes {
-      id
-      firstName
-      lastName
-      email
-      updatedAt
-      state
-    }
-    pageInfo {
-      hasNextPage
-      endCursor
-    }
-  }
-}
+```bash
+python scripts/admin_graphql_query.py query \
+  --query-file references/templates/customers_recent.graphql \
+  --variables-file references/templates/customers_recent.variables.json
 ```
 
-## 8) Inventory adjust quantities (mutation)
+## 3) Blogs and articles
 
-Docs: https://shopify.dev/docs/api/admin-graphql/latest/mutations/inventoryAdjustQuantities
-Scope: inventory write scope for app/session
+Docs:
+- https://shopify.dev/docs/api/admin-graphql/latest/queries/blogs
+- https://shopify.dev/docs/api/admin-graphql/latest/queries/articles
 
-```graphql
-mutation InventoryAdjustQuantities($input: InventoryAdjustQuantitiesInput!) {
-  inventoryAdjustQuantities(input: $input) {
-    userErrors {
-      field
-      message
-    }
-    inventoryAdjustmentGroup {
-      createdAt
-      reason
-      referenceDocumentUri
-      changes {
-        name
-        delta
-      }
-    }
-  }
-}
+```bash
+python scripts/admin_graphql_query.py query \
+  --query-file references/templates/blogs_with_articles.graphql \
+  --variables-file references/templates/blogs_with_articles.variables.json
 ```
 
-Notes:
-- Keep `referenceDocumentUri` unique per external operation for traceability/idempotency strategy.
-- Follow version-specific idempotency requirements in mutation docs.
+## 4) Products
 
-## Usage pattern
+Docs: https://shopify.dev/docs/api/admin-graphql/latest/queries/products
 
-- Start with query template to get IDs.
-- Run mutation template with variables.
-- Re-run query to verify update.
+```bash
+python scripts/admin_graphql_query.py query \
+  --query-file references/templates/products_performance.graphql \
+  --variables-file references/templates/products_performance.variables.json
+```
+
+## 5) Sales analytics (ShopifyQL)
+
+Docs: https://shopify.dev/docs/api/admin-graphql/latest/queries/shopifyqlQuery
+
+```bash
+python scripts/admin_graphql_query.py query \
+  --query-file references/templates/sales_shopifyql.graphql \
+  --variables-file references/templates/sales_shopifyql.variables.json
+```
+
+## 6) Subscription contracts
+
+Docs: https://shopify.dev/docs/api/admin-graphql/latest/queries/subscriptionContracts
+
+```bash
+python scripts/admin_graphql_query.py query \
+  --query-file references/templates/subscription_contracts.graphql \
+  --variables-file references/templates/subscription_contracts.variables.json
+```
+
+## 7) App installation subscriptions
+
+Docs: https://shopify.dev/docs/api/admin-graphql/latest/objects/AppInstallation
+
+```bash
+python scripts/admin_graphql_query.py query \
+  --query-file references/templates/app_installation_subscriptions.graphql \
+  --variables-file references/templates/app_installation_subscriptions.variables.json
+```
+
+## Operational pattern
+
+- Start with read-only template queries.
+- Verify data quality in audit outputs.
+- Promote stable templates to scheduled jobs or dashboards.
+- For write operations, use explicit `--apply` command flows with rollback artifacts.
