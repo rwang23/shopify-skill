@@ -2,13 +2,13 @@
 
 Shopify Dev MCP + Admin GraphQL skill with auditable execution, safety guardrails, and reusable store analytics workflows.
 
-For 中文, see [readme_zh.md](./readme_zh.md).
+For Chinese documentation, see [readme_zh.md](./readme_zh.md).
 
 ## Table of Contents
 - [1. Scope and Compatibility](#1-scope-and-compatibility)
 - [2. Features](#2-features)
 - [3. Repository Layout](#3-repository-layout)
-- [4. Setup Matrix (Agents, OS, Devices)](#4-setup-matrix-agents-os-devices)
+- [4. Configure MCP (Multi-Agent)](#4-configure-mcp-multi-agent)
 - [5. Installation](#5-installation)
 - [6. Usage](#6-usage)
 - [7. Audit Outputs](#7-audit-outputs)
@@ -21,16 +21,17 @@ For 中文, see [readme_zh.md](./readme_zh.md).
 
 This project is agent-agnostic and OS-agnostic.
 
-- Agents: Codex, Claude, Antigravity, OpenClaw, or any agent runtime that can execute local scripts and read this repository.
+- Agents: Codex, Claude, Antigravity, OpenClaw, or any runtime that can execute local scripts.
 - OS: Windows, macOS, Linux.
-- Devices: desktop/laptop, remote VM, CI runner.
+- Devices: desktop/laptop, remote VM/server, CI runner.
 
-The execution core is `scripts/admin_graphql_query.py`, so behavior is portable across runtimes.
+Core execution is runtime-independent because it lives in `scripts/admin_graphql_query.py`.
 
 ## 2. Features
 
 - Official-doc-first workflow (Dev MCP first, then execution).
 - Unified CLI commands for query, stock operations, rollback, and reporting.
+- Extra common commands: `top-products`, `inventory-alerts`, `orders-export`.
 - Read-only by default; write requires explicit `--apply`.
 - `--max-changes` guardrail for mass update prevention.
 - Structured audit outputs for every run.
@@ -39,40 +40,29 @@ The execution core is `scripts/admin_graphql_query.py`, so behavior is portable 
 
 ## 3. Repository Layout
 
-- `SKILL.md` - agent behavior and triggering instructions.
+- `SKILL.md` - skill behavior and triggering instructions.
 - `scripts/admin_graphql_query.py` - unified CLI entry.
 - `references/` - MCP and GraphQL guidance.
+- `documentation/` - maintainable docs (MCP matrix, detailed changelog, planning notes).
 - `tests/` - unittest suite.
-- `.github/release-template.md` - release drafting template.
 
-## 4. Setup Matrix (Agents, OS, Devices)
+## 4. Configure MCP (Multi-Agent)
 
-### 4.1 Agent runtime configuration
+See full matrix: [documentation/mcp-setup-matrix.md](./documentation/mcp-setup-matrix.md)
 
-For all agents, use the same MCP server command:
+Quick summary:
+- Codex: `~/.codex/config.toml`
+- Claude Code: `<project-root>/.mcp.json`
+- Claude Desktop: app settings / desktop MCP config
+- Antigravity: MCP settings UI (or raw config if supported)
+- OpenClaw: MCP settings if available, otherwise script-only mode
+
+Server definition used across all runtimes:
 
 ```toml
 command = "npx"
 args = ["-y", "@shopify/dev-mcp@latest"]
 ```
-
-Where to place this depends on the runtime:
-- Codex: `~/.codex/config.toml`
-- Claude: Claude MCP config location in your Claude environment
-- Antigravity/OpenClaw: their MCP/tool config location
-
-If a runtime has no MCP support, you can still use this repository in script-only mode via `scripts/admin_graphql_query.py`.
-
-### 4.2 OS command conventions
-
-- Windows PowerShell: `py -3 ...` (or `python ...` if mapped to Python 3)
-- macOS/Linux shell: `python3 ...` (or `python ...` if mapped to Python 3)
-
-### 4.3 Device profiles
-
-- Local desktop/laptop: store `.env` in project root.
-- Remote VM/server: use environment variables or secret manager injection.
-- CI/CD runner: inject `SHOPIFY_SHOP`, `SHOPIFY_ADMIN_TOKEN`, and `SHOPIFY_API_VERSION` from CI secrets.
 
 ## 5. Installation
 
@@ -82,17 +72,7 @@ If a runtime has no MCP support, you can still use this repository in script-onl
 - Node.js (for Shopify Dev MCP via `npx`)
 - Shopify Admin API token
 
-### 5.2 Configure MCP (example: Codex)
-
-Add to `~/.codex/config.toml`:
-
-```toml
-[mcp_servers.shopify-dev-mcp]
-command = "npx"
-args = ["-y", "@shopify/dev-mcp@latest"]
-```
-
-### 5.3 Configure project credentials
+### 5.2 Configure project credentials
 
 Create project-root `.env`:
 
@@ -116,23 +96,31 @@ Windows (PowerShell):
 py -3 scripts/admin_graphql_query.py capabilities
 ```
 
-macOS / Linux:
+macOS/Linux:
 
 ```bash
 python3 scripts/admin_graphql_query.py capabilities
 ```
 
-### 6.2 Read-only examples
+### 6.2 Query and analysis commands
 
 ```bash
 python scripts/admin_graphql_query.py query --query "{ shop { name myshopifyDomain } }"
 python scripts/admin_graphql_query.py query --query-file query.graphql --variables-file vars.json
-python scripts/admin_graphql_query.py scan-stock --threshold 50 --exclude-product "Shipment Protection+"
-python scripts/admin_graphql_query.py report-sales --page-size 100 --max-pages 10
 python scripts/admin_graphql_query.py capabilities
+python scripts/admin_graphql_query.py report-sales --page-size 100 --max-pages 10
+python scripts/admin_graphql_query.py top-products --days 30 --limit 20 --by revenue
+python scripts/admin_graphql_query.py orders-export --days 30 --page-size 100 --max-pages 10
 ```
 
-### 6.3 Safe write flow
+### 6.3 Inventory commands
+
+```bash
+python scripts/admin_graphql_query.py scan-stock --threshold 50 --exclude-product "Shipment Protection+"
+python scripts/admin_graphql_query.py inventory-alerts --low-threshold 10 --high-threshold 50
+```
+
+### 6.4 Safe write flow
 
 1. Dry-run preview:
 
@@ -178,21 +166,13 @@ python -m unittest discover tests -v
 
 ## 9. Changelog
 
+Short changelog summary is kept here. Detailed history is in [documentation/changelog.md](./documentation/changelog.md).
+
 ### 1.0.0 (2026-03-03)
 
-Added:
-- Unified CLI: `query`, `capabilities`, `scan-stock`, `randomize-stock`, `rollback-stock`, `report-sales`
-- Auditable output structure
-- Safety controls (`--apply`, `--max-changes`, rollback plan)
-- File-based inputs (`--query-file`, `--variables-file`)
-- Initial unittest coverage
-
-Changed:
-- Default behavior is read-only.
-- Error handling includes retry/backoff and classification.
-
-Notes:
-- Customer PII access can be restricted by Shopify plan/app approval.
+- Added unified CLI with safety controls and audit outputs.
+- Added report and inventory workflows.
+- Set default mode to read-only.
 
 ## 10. Release
 

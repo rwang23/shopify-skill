@@ -35,6 +35,9 @@ Any write operation must explicitly pass `--apply`.
 - `randomize-stock`
 - `rollback-stock`
 - `report-sales`
+- `top-products`
+- `inventory-alerts`
+- `orders-export`
 
 5. Persist auditable outputs.
 - Always emit `summary.json`, `request.json`, `result.json`.

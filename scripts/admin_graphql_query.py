@@ -234,6 +234,43 @@ def fetch_all_variants(client: ShopifyClient, page_size: int = 250) -> List[Dict
     return out
 
 
+def fetch_orders(client: ShopifyClient, page_size: int = 100, max_pages: int = 10) -> List[Dict[str, Any]]:
+    query = """
+    query Orders($first: Int!, $after: String) {
+      orders(first: $first, after: $after, reverse: true, sortKey: CREATED_AT) {
+        pageInfo { hasNextPage endCursor }
+        nodes {
+          id
+          name
+          createdAt
+          currentTotalPriceSet { shopMoney { amount currencyCode } }
+          totalDiscountsSet { shopMoney { amount } }
+          shippingAddress { countryCode }
+          lineItems(first: 50) {
+            nodes {
+              quantity
+              discountedTotalSet { shopMoney { amount } }
+              product { id title }
+              variant { id sku title }
+            }
+          }
+        }
+      }
+    }
+    """
+    orders: List[Dict[str, Any]] = []
+    after = None
+    pages = 0
+    while True:
+        pages += 1
+        data = client.gql(query, {"first": page_size, "after": after})["data"]["orders"]
+        orders.extend(data["nodes"])
+        if not data["pageInfo"]["hasNextPage"] or pages >= max_pages:
+            break
+        after = data["pageInfo"]["endCursor"]
+    return orders
+
+
 def get_available_level(variant: Dict[str, Any]) -> Tuple[Dict[str, Any] | None, int | None]:
     levels = (((variant.get("inventoryItem") or {}).get("inventoryLevels") or {}).get("nodes") or [])
     best_level = None
@@ -671,39 +708,8 @@ def _summarize_orders(orders: List[Dict[str, Any]], start: datetime, end: dateti
 
 
 def cmd_report_sales(args: argparse.Namespace, cfg: Config, client: ShopifyClient, run: AuditRun) -> int:
-    q = """
-    query Orders($first: Int!, $after: String) {
-      orders(first: $first, after: $after, reverse: true, sortKey: CREATED_AT) {
-        pageInfo { hasNextPage endCursor }
-        nodes {
-          id
-          name
-          createdAt
-          currentTotalPriceSet { shopMoney { amount currencyCode } }
-          totalDiscountsSet { shopMoney { amount } }
-          shippingAddress { countryCode }
-          lineItems(first: 50) {
-            nodes {
-              quantity
-              discountedTotalSet { shopMoney { amount } }
-              product { id title }
-            }
-          }
-        }
-      }
-    }
-    """
-
-    orders: List[Dict[str, Any]] = []
-    after = None
-    pages = 0
-    while True:
-        pages += 1
-        data = client.gql(q, {"first": args.page_size, "after": after})["data"]["orders"]
-        orders.extend(data["nodes"])
-        if not data["pageInfo"]["hasNextPage"] or pages >= args.max_pages:
-            break
-        after = data["pageInfo"]["endCursor"]
+    orders = fetch_orders(client, page_size=args.page_size, max_pages=args.max_pages)
+    pages = min(args.max_pages, (len(orders) + args.page_size - 1) // args.page_size)
 
     now = utc_now()
     last30 = _summarize_orders(orders, now - timedelta(days=30), now)
@@ -764,6 +770,148 @@ def cmd_report_sales(args: argparse.Namespace, cfg: Config, client: ShopifyClien
     return 0
 
 
+def cmd_top_products(args: argparse.Namespace, cfg: Config, client: ShopifyClient, run: AuditRun) -> int:
+    orders = fetch_orders(client, page_size=args.page_size, max_pages=args.max_pages)
+    now = utc_now()
+    start = now - timedelta(days=args.days)
+
+    product_stats: Dict[str, Dict[str, Any]] = {}
+    for o in orders:
+        dt = datetime.fromisoformat(o["createdAt"].replace("Z", "+00:00"))
+        if dt < start or dt >= now:
+            continue
+        for li in ((o.get("lineItems") or {}).get("nodes") or []):
+            p = li.get("product") or {}
+            title = p.get("title") or "Unknown product"
+            qty = int(li.get("quantity") or 0)
+            rev = float(((li.get("discountedTotalSet") or {}).get("shopMoney") or {}).get("amount") or 0.0)
+            row = product_stats.setdefault(title, {"product_title": title, "quantity": 0, "revenue": 0.0})
+            row["quantity"] += qty
+            row["revenue"] += rev
+
+    by = args.by
+    rows = list(product_stats.values())
+    rows.sort(key=lambda x: x["revenue"] if by == "revenue" else x["quantity"], reverse=True)
+    rows = rows[: args.limit]
+
+    run.write_json("request.json", {"days": args.days, "limit": args.limit, "by": by, "page_size": args.page_size, "max_pages": args.max_pages})
+    run.write_json("result.json", {"top_products": rows})
+    run.write_csv("top-products.csv", rows, ["product_title", "quantity", "revenue"])
+
+    summary = {
+        "operation": "top-products",
+        "timestamp_utc": iso_utc(),
+        "shop": cfg.shop,
+        "api_version": cfg.api_version,
+        "days": args.days,
+        "limit": args.limit,
+        "sort_by": by,
+        "rows": len(rows),
+        "run_dir": str(run.run_dir),
+    }
+    run.write_json("summary.json", summary)
+    print(json.dumps(summary, ensure_ascii=False))
+    print(str(run.run_dir))
+    return 0
+
+
+def cmd_inventory_alerts(args: argparse.Namespace, cfg: Config, client: ShopifyClient, run: AuditRun) -> int:
+    variants = fetch_all_variants(client)
+    low_rows: List[Dict[str, Any]] = []
+    oos_rows: List[Dict[str, Any]] = []
+    high_rows: List[Dict[str, Any]] = []
+
+    for v in variants:
+        p = v.get("product") or {}
+        qty = int(v.get("inventoryQuantity") or 0)
+        row = {
+            "product_title": p.get("title") or "",
+            "product_status": p.get("status") or "",
+            "sku": (v.get("sku") or "").strip(),
+            "inventory_quantity": qty,
+            "variant_id": v.get("id") or "",
+        }
+        if qty <= 0:
+            oos_rows.append(row)
+        elif qty <= args.low_threshold:
+            low_rows.append(row)
+        if qty > args.high_threshold:
+            high_rows.append(row)
+
+    low_rows.sort(key=lambda x: (x["inventory_quantity"], x["product_title"], x["sku"]))
+    oos_rows.sort(key=lambda x: (x["product_title"], x["sku"]))
+    high_rows.sort(key=lambda x: (-x["inventory_quantity"], x["product_title"], x["sku"]))
+
+    run.write_json("request.json", {"low_threshold": args.low_threshold, "high_threshold": args.high_threshold})
+    run.write_json("result.json", {"out_of_stock": oos_rows, "low_stock": low_rows, "overstock": high_rows})
+    run.write_csv("out-of-stock.csv", oos_rows, ["product_title", "sku", "inventory_quantity", "product_status", "variant_id"])
+    run.write_csv("low-stock.csv", low_rows, ["product_title", "sku", "inventory_quantity", "product_status", "variant_id"])
+    run.write_csv("overstock.csv", high_rows, ["product_title", "sku", "inventory_quantity", "product_status", "variant_id"])
+
+    summary = {
+        "operation": "inventory-alerts",
+        "timestamp_utc": iso_utc(),
+        "shop": cfg.shop,
+        "api_version": cfg.api_version,
+        "variants_scanned": len(variants),
+        "out_of_stock_count": len(oos_rows),
+        "low_stock_count": len(low_rows),
+        "overstock_count": len(high_rows),
+        "run_dir": str(run.run_dir),
+    }
+    run.write_json("summary.json", summary)
+    print(json.dumps(summary, ensure_ascii=False))
+    print(str(run.run_dir))
+    return 0
+
+
+def cmd_orders_export(args: argparse.Namespace, cfg: Config, client: ShopifyClient, run: AuditRun) -> int:
+    orders = fetch_orders(client, page_size=args.page_size, max_pages=args.max_pages)
+    now = utc_now()
+    start = now - timedelta(days=args.days)
+
+    rows: List[Dict[str, Any]] = []
+    for o in orders:
+        dt = datetime.fromisoformat(o["createdAt"].replace("Z", "+00:00"))
+        if dt < start or dt >= now:
+            continue
+        line_nodes = ((o.get("lineItems") or {}).get("nodes") or [])
+        line_count = len(line_nodes)
+        unit_qty = sum(int(li.get("quantity") or 0) for li in line_nodes)
+        rows.append(
+            {
+                "order_id": o.get("id") or "",
+                "order_name": o.get("name") or "",
+                "created_at": o.get("createdAt") or "",
+                "country_code": ((o.get("shippingAddress") or {}).get("countryCode") or ""),
+                "total_amount": float(((o.get("currentTotalPriceSet") or {}).get("shopMoney") or {}).get("amount") or 0.0),
+                "discount_amount": float(((o.get("totalDiscountsSet") or {}).get("shopMoney") or {}).get("amount") or 0.0),
+                "line_count": line_count,
+                "unit_qty": unit_qty,
+            }
+        )
+
+    rows.sort(key=lambda x: x["created_at"], reverse=True)
+
+    run.write_json("request.json", {"days": args.days, "page_size": args.page_size, "max_pages": args.max_pages})
+    run.write_json("result.json", {"orders": rows})
+    run.write_csv("orders-export.csv", rows, ["order_id", "order_name", "created_at", "country_code", "total_amount", "discount_amount", "line_count", "unit_qty"])
+
+    summary = {
+        "operation": "orders-export",
+        "timestamp_utc": iso_utc(),
+        "shop": cfg.shop,
+        "api_version": cfg.api_version,
+        "days": args.days,
+        "rows": len(rows),
+        "run_dir": str(run.run_dir),
+    }
+    run.write_json("summary.json", summary)
+    print(json.dumps(summary, ensure_ascii=False))
+    print(str(run.run_dir))
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description="Shopify Skill CLI")
     p.add_argument("--project-root", default=str(Path.cwd()), help="Project root containing .env")
@@ -803,6 +951,22 @@ def build_parser() -> argparse.ArgumentParser:
     rp.add_argument("--page-size", type=int, default=100)
     rp.add_argument("--max-pages", type=int, default=10)
 
+    tp = sp.add_parser("top-products", help="Top products by revenue or quantity for recent days")
+    tp.add_argument("--days", type=int, default=30)
+    tp.add_argument("--limit", type=int, default=20)
+    tp.add_argument("--by", choices=["revenue", "quantity"], default="revenue")
+    tp.add_argument("--page-size", type=int, default=100)
+    tp.add_argument("--max-pages", type=int, default=10)
+
+    ia = sp.add_parser("inventory-alerts", help="Generate out-of-stock/low-stock/overstock alert files")
+    ia.add_argument("--low-threshold", type=int, default=10)
+    ia.add_argument("--high-threshold", type=int, default=50)
+
+    oe = sp.add_parser("orders-export", help="Export recent orders to CSV")
+    oe.add_argument("--days", type=int, default=30)
+    oe.add_argument("--page-size", type=int, default=100)
+    oe.add_argument("--max-pages", type=int, default=10)
+
     return p
 
 
@@ -825,6 +989,12 @@ def run_command(args: argparse.Namespace) -> int:
             return cmd_rollback_stock(args, cfg, client, run)
         if command == "report-sales":
             return cmd_report_sales(args, cfg, client, run)
+        if command == "top-products":
+            return cmd_top_products(args, cfg, client, run)
+        if command == "inventory-alerts":
+            return cmd_inventory_alerts(args, cfg, client, run)
+        if command == "orders-export":
+            return cmd_orders_export(args, cfg, client, run)
 
         raise ValueError(f"Unknown command: {command}")
     except Exception as exc:

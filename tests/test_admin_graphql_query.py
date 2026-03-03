@@ -42,6 +42,30 @@ class TestHelpers(unittest.TestCase):
             self.assertTrue(run.run_dir.exists())
             self.assertIn("-scan-stock-", run.run_dir.name)
 
+    def test_parser_has_extended_commands(self):
+        parser = mod.build_parser()
+        text = parser.format_help()
+        self.assertIn("top-products", text)
+        self.assertIn("inventory-alerts", text)
+        self.assertIn("orders-export", text)
+
+    def test_summarize_orders_basic(self):
+        start = mod.utc_now() - mod.timedelta(days=2)
+        end = mod.utc_now()
+        orders = [
+            {
+                "createdAt": mod.iso_utc(mod.utc_now() - mod.timedelta(days=1)),
+                "currentTotalPriceSet": {"shopMoney": {"amount": "10.5"}},
+                "totalDiscountsSet": {"shopMoney": {"amount": "1.0"}},
+                "shippingAddress": {"countryCode": "US"},
+                "lineItems": {"nodes": [{"discountedTotalSet": {"shopMoney": {"amount": "10.5"}}, "product": {"title": "A"}}]},
+            }
+        ]
+        out = mod._summarize_orders(orders, start, end)
+        self.assertEqual(out["orders"], 1)
+        self.assertAlmostEqual(out["revenue"], 10.5, places=6)
+        self.assertAlmostEqual(out["discounts"], 1.0, places=6)
+
 
 if __name__ == "__main__":
     unittest.main()
