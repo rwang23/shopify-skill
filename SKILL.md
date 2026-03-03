@@ -1,66 +1,65 @@
 ---
 name: shopify-skill
-description: Shopify Dev MCP and Admin GraphQL implementation skill for writing, validating, debugging, and executing Shopify store queries/mutations. Use when Codex needs Shopify docs lookup, schema introspection, GraphQL operation drafting, scope checks, and live store data access through Admin API credentials.
+description: Shopify Dev MCP and Admin GraphQL implementation skill for writing, validating, debugging, and executing Shopify store queries/mutations. Use when Codex needs Shopify docs lookup, schema introspection, GraphQL operation drafting, scope checks, and live store data analysis with auditable outputs.
 ---
 
 # Shopify Skill
 
 ## Overview
 
-Use Dev MCP for discovery/schema checks first, then run Admin GraphQL with explicit credentials. Keep operations scope-aware, version-pinned, and validation-first.
+Use Dev MCP for discovery/schema checks first, then execute Admin GraphQL via `scripts/admin_graphql_query.py`.
+
+Default mode is read-only.
+Any write operation must explicitly pass `--apply`.
 
 ## Workflow
 
 1. Classify request intent.
-- `write/debug`: user asks to write or fix GraphQL.
-- `execute/read data`: user asks to run query, fetch results, or read live store data.
+- `write/debug`: draft or fix GraphQL only.
+- `read/analyze`: run read-only queries and reports.
+- `write/ops`: inventory or state-changing actions.
 
-2. Confirm prerequisites.
-- Confirm MCP server is enabled (`shopify-dev-mcp`).
-- Confirm target store, token/session, and API version.
-- If execution is requested and credentials are missing, follow `references/live-store-access.md`.
+2. Enforce safety.
+- For write commands, require `--apply`.
+- Enforce `--max-changes` guardrail.
+- Generate rollback plan for write inventory commands.
 
-3. Research from official docs.
-- Use `search_docs_chunks` for focused sections.
-- Use `fetch_full_docs` for canonical details.
-- Use `learn_shopify_api` for concepts/migration clarifications.
+3. Use official MCP tooling before execution.
+- `search_docs_chunks`, `fetch_full_docs`, `learn_shopify_api`
+- `introspect_graphql_schema`, `validate_graphql_codeblocks`
 
-4. Build GraphQL safely.
-- Use `introspect_graphql_schema` to verify fields, inputs, enums, deprecations, and payload shape.
-- Draft operations with variables.
-- Run `validate_graphql_codeblocks` before returning or executing GraphQL.
+4. Execute via CLI subcommands.
+- `query`
+- `capabilities`
+- `scan-stock`
+- `randomize-stock`
+- `rollback-stock`
+- `report-sales`
 
-5. Validate UI/theme code when relevant.
-- Use `validate_component_codeblocks` for Shopify component snippets.
-- Use `validate_theme_codeblocks` for Liquid/theme snippets.
+5. Persist auditable outputs.
+- Always emit `summary.json`, `request.json`, `result.json`.
+- Write operations additionally emit `applied.csv`, `failed.csv`, and `rollback-plan.json`.
 
-6. Execute and verify.
-- Prefer read query before write mutation.
-- Include `userErrors { field message }` for mutation responses.
-- For live execution, use `scripts/admin_graphql_query.py`.
-- Re-query changed resource to confirm result.
+## Execution triggers
 
-## Live execution trigger phrases
+Treat these as execution intent:
+- "run it", "execute", "fetch data", "analyze store", "scan stock", "adjust inventory"
 
-Treat phrases below as execution intent:
-- "run it", "execute", "fetch data", "get results", "query my store", "read live data"
-
-When triggered:
-1. Verify `.env` in project root has required keys.
-2. Run `python scripts/admin_graphql_query.py --query "<graphql>"`.
-3. Return concise result summary plus structured response.
+For write intent, restate impact and require explicit confirmation in chat before using `--apply`.
 
 ## Output contract
 
-Return implementation guidance in this order:
-1. Goal (one line)
+Return in this order:
+1. Goal
 2. Required scopes
-3. Final operation (validated)
-4. Verification checks
+3. Command executed
+4. Result summary
+5. Audit output directory
 
 ## References
 
-- MCP tools and decision map: `references/dev-mcp-tools.md`
-- Admin GraphQL endpoint and conventions: `references/admin-graphql-patterns.md`
-- Ready-to-use common templates: `references/common-templates.md`
-- Credentials/setup/execution guide: `references/live-store-access.md`
+- MCP tools: `references/dev-mcp-tools.md`
+- GraphQL patterns: `references/admin-graphql-patterns.md`
+- Templates: `references/common-templates.md`
+- Credentials and execution: `references/live-store-access.md`
+- Audit naming standard: `references/audit-output-convention.md`
