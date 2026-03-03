@@ -1,6 +1,6 @@
 ---
 name: shopify-skill
-description: Shopify Dev MCP and Admin GraphQL implementation skill for writing, validating, debugging, and executing Shopify store queries/mutations. Use when Codex needs Shopify docs lookup, schema introspection, GraphQL operation drafting, scope checks, and live store data analysis with auditable outputs.
+description: Shopify Dev MCP and Admin GraphQL implementation skill for writing, validating, debugging, and executing Shopify store queries/mutations. Use when the agent needs Shopify docs lookup, schema introspection, GraphQL operation drafting, scope checks, and live store data analysis with auditable outputs.
 ---
 
 # Shopify Skill

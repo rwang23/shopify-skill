@@ -28,6 +28,11 @@ python scripts/admin_graphql_query.py rollback-stock --rollback-file shopify-ski
 python scripts/admin_graphql_query.py report-sales --page-size 100 --max-pages 10
 ```
 
+Cross-platform note:
+- Windows PowerShell: `py -3 scripts/admin_graphql_query.py ...`
+- macOS/Linux: `python3 scripts/admin_graphql_query.py ...`
+- If `python` maps to Python 3, `python ...` works on all platforms.
+
 ## Safety defaults
 
 - Read-only by default.
